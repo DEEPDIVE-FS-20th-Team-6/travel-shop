@@ -17,5 +17,5 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 // ✅ 연결이 “멈추는” 환경에서 잘 뚫리게 하는 설정
 export const db = initializeFirestore(app, {
   experimentalAutoDetectLongPolling: true,
-  useFetchStreams: false,
+ 
 });

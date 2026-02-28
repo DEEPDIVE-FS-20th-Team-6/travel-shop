@@ -1,18 +1,46 @@
 "use client";
 
-import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function CheckoutSuccessPage() {
-  const sp = useSearchParams();
-  const orderId = sp.get("orderId");
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [order, setOrder] = useState<any>(null);
+  const [loaded, setLoaded] = useState(false);
 
-  const order = useMemo(() => {
-    if (!orderId) return null;
-    const orders = JSON.parse(localStorage.getItem("orders") || "[]");
-    return orders.find((o: any) => o.id === orderId) ?? null;
-  }, [orderId]);
+  useEffect(() => {
+    // ✅ 브라우저에서만 쿼리 읽기
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("orderId");
+    setOrderId(id);
+
+    // ✅ 브라우저에서만 localStorage 읽기
+    try {
+      if (!id) {
+        setOrder(null);
+        setLoaded(true);
+        return;
+      }
+      const raw = localStorage.getItem("orders") || "[]";
+      const orders = JSON.parse(raw);
+      const found = orders.find((o: any) => o.id === id) ?? null;
+      setOrder(found);
+    } catch {
+      setOrder(null);
+    } finally {
+      setLoaded(true);
+    }
+  }, []);
+
+  // 로딩 중 UI (선택)
+  if (!loaded) {
+    return (
+      <div style={{ maxWidth: 900, margin: "0 auto", padding: "60px 20px", textAlign: "center" }}>
+        <h1 style={{ fontSize: 28, marginBottom: 10 }}>결제 완료</h1>
+        <p style={{ color: "#64748b" }}>주문 정보를 불러오는 중...</p>
+      </div>
+    );
+  }
 
   if (!orderId) {
     return (
@@ -35,7 +63,7 @@ export default function CheckoutSuccessPage() {
         <div style={{ background: "white", borderRadius: 14, padding: 18, boxShadow: "0 8px 20px rgba(0,0,0,0.05)" }}>
           <h2 style={{ fontSize: 18, marginBottom: 12 }}>주문 요약</h2>
           <div style={{ display: "grid", gap: 10 }}>
-            {order.items.map((it: any) => (
+            {order.items?.map((it: any) => (
               <div key={it.id} style={{ display: "flex", justifyContent: "space-between" }}>
                 <span>{it.title} × {it.qty}</span>
                 <b>{(it.price * it.qty).toLocaleString()}원</b>
@@ -45,8 +73,14 @@ export default function CheckoutSuccessPage() {
 
           <div style={{ borderTop: "1px solid #e2e8f0", marginTop: 14, paddingTop: 14, display: "flex", justifyContent: "space-between" }}>
             <span style={{ color: "#64748b" }}>총 결제금액</span>
-            <b style={{ fontSize: 18 }}>{order.summary.totalPrice.toLocaleString()}원</b>
+            <b style={{ fontSize: 18 }}>{order.summary?.totalPrice?.toLocaleString?.() ?? "0"}원</b>
           </div>
+        </div>
+      )}
+
+      {!order && (
+        <div style={{ textAlign: "center", color: "#64748b" }}>
+          저장된 주문 데이터를 찾지 못했어요. (새로고침/다른 기기 접속이면 그럴 수 있어요)
         </div>
       )}
 
